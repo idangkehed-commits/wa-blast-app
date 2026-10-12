@@ -79,6 +79,9 @@ class WhatsAppService {
         connectTimeoutMs: 60000,
         defaultQueryTimeoutMs: 60000,
         keepAliveIntervalMs: 25000,
+        markOnlineOnConnect: false,
+        syncFullHistory: false,
+        getMessage: async () => undefined,
       });
 
       this.sock.ev.on('creds.update', saveCreds);
@@ -154,16 +157,18 @@ class WhatsAppService {
     if (!this.sock || this.connectionStatus !== 'connected') {
       throw new Error('WhatsApp belum terhubung.');
     }
+    const cleanDigits = String(phoneOnly).replace(/[^0-9]/g, '');
+    const defaultJid = `${cleanDigits}@s.whatsapp.net`;
     try {
-      const results = await this.sock.onWhatsApp(phoneOnly);
-      if (results && results.length > 0 && results[0].exists) {
-        return { exists: true, jid: results[0].jid };
+      const results = await this.sock.onWhatsApp(cleanDigits);
+      if (results && results.length > 0) {
+        return { exists: Boolean(results[0].exists), jid: results[0].jid || defaultJid };
       }
-      return { exists: false, jid: null };
+      return { exists: true, jid: defaultJid };
     } catch (err) {
-      // Jika terjadi timeout cek, fallback anggap valid untuk menghindari false rejection
-      console.warn(`Peringatan cek nomor ${phoneOnly}:`, err.message);
-      return { exists: true, jid: `${phoneOnly}@s.whatsapp.net` };
+      // Jika USync gagal atau timeout, jangan putuskan koneksi, fallback ke nomor normal
+      console.warn(`Peringatan cek nomor ${cleanDigits}:`, err.message);
+      return { exists: true, jid: defaultJid };
     }
   }
 
@@ -171,12 +176,13 @@ class WhatsAppService {
   async simulateTyping(jid, durationMs = 2500) {
     if (!this.sock || this.connectionStatus !== 'connected') return;
     try {
-      await this.sock.presenceSubscribe(jid);
+      // Catatan: JANGAN panggil presenceSubscribe(jid) karena WhatsApp server akan mereset koneksi
+      // (stream closed / error 400) jika kontak target bukan mutual contact!
       await this.sock.sendPresenceUpdate('composing', jid);
       await new Promise(r => setTimeout(r, durationMs));
       await this.sock.sendPresenceUpdate('paused', jid);
     } catch (err) {
-      // Abaikan error presence jika kontak belum pernah chat
+      // Abaikan error presence
     }
   }
 
@@ -186,10 +192,17 @@ class WhatsAppService {
       throw new Error('WhatsApp belum terhubung!');
     }
 
+    // Pastikan targetJid memiliki format WhatsApp yang benar (@s.whatsapp.net)
+    let jid = targetJid;
+    if (!jid.includes('@')) {
+      const cleanDigits = String(jid).replace(/[^0-9]/g, '');
+      jid = `${cleanDigits}@s.whatsapp.net`;
+    }
+
     // 1. Simulasi mengetik agar natural
     if (simulateTyping) {
       const randomTypingTime = Math.floor(Math.random() * 2000) + 1500; // 1.5 - 3.5 detik
-      await this.simulateTyping(targetJid, randomTypingTime);
+      await this.simulateTyping(jid, randomTypingTime);
     }
 
     // 2. Kirim media atau teks
@@ -198,20 +211,20 @@ class WhatsAppService {
       const mime = mediaFile.mimetype || '';
 
       if (mime.startsWith('image/')) {
-        return await this.sock.sendMessage(targetJid, {
+        return await this.sock.sendMessage(jid, {
           image: buffer,
           caption: contentText || '',
           mimetype: mime
         });
       } else if (mime.startsWith('video/')) {
-        return await this.sock.sendMessage(targetJid, {
+        return await this.sock.sendMessage(jid, {
           video: buffer,
           caption: contentText || '',
           mimetype: mime
         });
       } else {
         // Fallback dokumen (PDF/dll)
-        return await this.sock.sendMessage(targetJid, {
+        return await this.sock.sendMessage(jid, {
           document: buffer,
           fileName: mediaFile.originalname || 'document',
           caption: contentText || '',
@@ -220,7 +233,7 @@ class WhatsAppService {
       }
     } else {
       // Hanya pesan teks biasa
-      return await this.sock.sendMessage(targetJid, {
+      return await this.sock.sendMessage(jid, {
         text: contentText
       });
     }

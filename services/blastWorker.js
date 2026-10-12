@@ -107,14 +107,22 @@ class BlastWorker {
       });
 
       this.scheduleTimer = setTimeout(() => {
-        this.runLoop();
+        this.runLoop().catch(err => {
+          console.error('[BlastWorker] Error pada scheduled runLoop:', err);
+        });
       }, delayMs);
 
       return { scheduled: true, scheduledAt: this.jobConfig.scheduledAt };
     }
 
-    // Jika langsung kirim
-    return this.runLoop();
+    // Jalankan loop di background agar HTTP response tidak hanging/timeout
+    this.runLoop().catch(err => {
+      console.error('[BlastWorker] Error pada runLoop:', err);
+      this.state = 'stopped';
+      this.broadcast('state_change', { message: 'Pengiriman terhenti: ' + err.message });
+    });
+
+    return { started: true, total: contacts.length };
   }
 
   // Loop utama pengiriman
@@ -138,6 +146,23 @@ class BlastWorker {
           this.pausePromiseResolve = resolve;
         });
         if (this.state === 'stopped') break;
+      }
+
+      // 3. Pastikan WhatsApp masih terhubung (tunggu hingga 30 detik jika sedang auto-reconnect)
+      if (this.waService.connectionStatus !== 'connected') {
+        console.warn('[BlastWorker] Menunggu koneksi WhatsApp terhubung kembali...');
+        let waitAttempts = 0;
+        while (this.waService.connectionStatus !== 'connected' && waitAttempts < 15) {
+          if (this.state === 'stopped') break;
+          await new Promise(r => setTimeout(r, 2000));
+          waitAttempts++;
+        }
+        if (this.waService.connectionStatus !== 'connected') {
+          console.error('[BlastWorker] Koneksi WhatsApp terputus permanen.');
+          this.state = 'stopped';
+          this.broadcast('state_change', { message: 'Koneksi WhatsApp terputus. Silakan hubungkan kembali.' });
+          break;
+        }
       }
 
       const contact = this.contacts[this.currentIndex];

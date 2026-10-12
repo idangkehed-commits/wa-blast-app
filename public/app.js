@@ -161,8 +161,9 @@ function initEventSource() {
   });
 
   evtSource.onerror = () => {
-    waStatusBadge.className = 'status-badge disconnected';
-    waStatusText.textContent = 'Menghubungkan ke Server...';
+    // EventSource di browser otomatis reconnect jika jaringan melambat,
+    // jangan ubah status badge WhatsApp menjadi terputus kecuali jika server melaporkan putus.
+    console.warn('Koneksi real-time SSE sedang menghubungkan kembali...');
   };
 }
 

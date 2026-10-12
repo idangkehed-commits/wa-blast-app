@@ -139,7 +139,17 @@ app.get('/api/events', (req, res) => {
   };
   res.write(`event: init\ndata: ${JSON.stringify(initialData)}\n\n`);
 
+  // Heartbeat keep-alive ping setiap 15 detik agar koneksi SSE tidak ditutup oleh proxy Render/browser
+  const pingInterval = setInterval(() => {
+    try {
+      res.write(': keep-alive\n\n');
+    } catch (e) {
+      clearInterval(pingInterval);
+    }
+  }, 15000);
+
   req.on('close', () => {
+    clearInterval(pingInterval);
     clientSet.delete(res);
     if (clientSet.size === 0) {
       sseClients.delete(sessionId);
