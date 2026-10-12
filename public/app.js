@@ -43,6 +43,8 @@ const btnGetPairingCode = document.getElementById('btnGetPairingCode');
 const pairingCodeDisplay = document.getElementById('pairingCodeDisplay');
 const pairingCodeText = document.getElementById('pairingCodeText');
 const btnCopyPairingCode = document.getElementById('btnCopyPairingCode');
+const btnRefreshSession = document.getElementById('btnRefreshSession');
+const refreshSessionBox = document.getElementById('refreshSessionBox');
 
 // PWA Elements
 const pwaInstallBanner = document.getElementById('pwaInstallBanner');
@@ -231,6 +233,23 @@ btnCopyPairingCode.addEventListener('click', () => {
   });
 });
 
+// Muat Ulang / Buat Sesi Baru
+if (btnRefreshSession) {
+  btnRefreshSession.addEventListener('click', async () => {
+    try {
+      btnRefreshSession.disabled = true;
+      btnRefreshSession.textContent = 'Memuat Sesi Baru...';
+      pairingCodeDisplay.style.display = 'none';
+      await apiFetch('/api/reconnect', { method: 'POST' });
+    } catch (err) {
+      alert('Gagal memuat ulang: ' + err.message);
+    } finally {
+      btnRefreshSession.disabled = false;
+      btnRefreshSession.textContent = '🔄 Muat Ulang / Buat Sesi Baru';
+    }
+  });
+}
+
 // Update UI Koneksi WhatsApp
 function updateWaUI(waData) {
   if (!waData) return;
@@ -242,6 +261,7 @@ function updateWaUI(waData) {
     connectionMethodTabs.style.display = 'none';
     tabWaPairing.style.display = 'none';
     tabWaQr.style.display = 'none';
+    if (refreshSessionBox) refreshSessionBox.style.display = 'none';
     connectedContainer.style.display = 'block';
 
     if (waData.user) {
@@ -253,6 +273,7 @@ function updateWaUI(waData) {
     waStatusText.textContent = 'Siap Dihubungkan';
     connectedContainer.style.display = 'none';
     connectionMethodTabs.style.display = 'flex';
+    if (refreshSessionBox) refreshSessionBox.style.display = 'block';
 
     // Periksa tab mana yang aktif
     const activeTab = document.querySelector('[data-wa-tab].active')?.dataset.waTab || 'pairing';
@@ -281,6 +302,7 @@ function updateWaUI(waData) {
     waStatusText.textContent = 'Terputus';
     connectedContainer.style.display = 'none';
     connectionMethodTabs.style.display = 'flex';
+    if (refreshSessionBox) refreshSessionBox.style.display = 'block';
   }
 }
 

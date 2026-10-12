@@ -50,6 +50,16 @@ class WhatsAppService {
       const makeWASocket = baileys.default || baileys.makeWASocket;
       const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = baileys;
 
+      if (this.sock) {
+        try {
+          this.sock.ev.removeAllListeners();
+          this.sock.end(undefined);
+        } catch (e) {
+          // ignore
+        }
+        this.sock = null;
+      }
+
       if (!fs.existsSync(this.authDir)) {
         fs.mkdirSync(this.authDir, { recursive: true });
       }
@@ -65,7 +75,7 @@ class WhatsAppService {
         logger: pino({ level: 'silent' }),
         auth: state,
         printQRInTerminal: false,
-        browser: ['WhatsApp Blast ID', 'Chrome', '124.0.0.0'],
+        browser: ['Ubuntu', 'Chrome', '20.0.04'],
         connectTimeoutMs: 60000,
         defaultQueryTimeoutMs: 60000,
         keepAliveIntervalMs: 25000,
@@ -89,6 +99,7 @@ class WhatsAppService {
         if (connection === 'open') {
           this.connectionStatus = 'connected';
           this.qrDataUrl = null;
+          this.pairingCode = null;
           const userJid = this.sock.user?.id || '';
           const userPhone = userJid.split(':')[0] || userJid.split('@')[0];
           this.connectedUser = {
@@ -116,11 +127,18 @@ class WhatsAppService {
               setTimeout(() => {
                 this.isReconnecting = false;
                 this.init();
-              }, 4000);
+              }, 3000);
             }
           } else {
-            console.log('Sesi logout, silakan scan QR baru.');
+            console.log('Sesi kedaluwarsa/logout, membuat sesi baru yang bersih...');
             this.clearAuth();
+            if (!this.isReconnecting) {
+              this.isReconnecting = true;
+              setTimeout(() => {
+                this.isReconnecting = false;
+                this.init();
+              }, 2000);
+            }
           }
         }
       });
@@ -219,9 +237,10 @@ class WhatsAppService {
       throw new Error('Nomor HP tidak valid. Masukkan format seluler Indonesia seperti 08123456789');
     }
 
-    if (!this.sock) {
+    // Pastikan socket aktif dan bukan disconnected
+    if (!this.sock || this.connectionStatus === 'disconnected') {
       await this.init();
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 2500));
     }
 
     if (this.sock?.authState?.creds?.registered) {
@@ -229,13 +248,16 @@ class WhatsAppService {
     }
 
     try {
+      console.log(`[Pairing] Meminta kode pairing untuk nomor: ${clean}`);
       const code = await this.sock.requestPairingCode(clean);
+      console.log(`[Pairing] Kode pairing berhasil diterima: ${code}`);
       this.pairingCode = code;
       this.notifyStatus();
       return code;
     } catch (err) {
       console.error('Error saat request pairing code:', err);
-      throw new Error('Gagal meminta kode pairing: ' + err.message);
+      this.init();
+      throw new Error('Gagal meminta kode pairing: ' + (err.message || 'Koneksi timeout. Silakan klik tombol sekali lagi.'));
     }
   }
 

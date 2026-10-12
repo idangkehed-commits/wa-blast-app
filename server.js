@@ -171,6 +171,9 @@ app.post('/api/logout', async (req, res) => {
 app.post('/api/reconnect', async (req, res) => {
   try {
     const { userSession } = req;
+    if (userSession.waService.connectionStatus !== 'connected') {
+      userSession.waService.clearAuth();
+    }
     await userSession.waService.init();
     res.json({ success: true, message: 'Menghubungkan ulang ke WhatsApp...' });
   } catch (err) {
