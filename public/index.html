@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WhatsApp Blast Indonesia</title>
+  
+  <!-- PWA TAGS -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WA Blast">
+  <link rel="apple-touch-icon" href="/icons/icon.svg">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- PWA INSTALL BANNER UNTUK HP -->
+    <div id="pwaInstallBanner" class="pwa-banner" style="display: none;">
+      <div class="pwa-banner-content">
+        <span class="pwa-banner-icon">📲</span>
+        <div>
+          <strong>Pasang di Layar Utama HP</strong>
+          <small>Gunakan seperti aplikasi Android/iPhone tanpa perlu APK</small>
+        </div>
+      </div>
+      <div class="pwa-banner-actions">
+        <button id="btnPwaInstall" class="btn btn-primary btn-sm">Install</button>
+        <button id="btnPwaDismiss" class="btn-text">Nanti</button>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-icon">💬</div>
+        <div>
+          <h1>WhatsApp Blast Indonesia</h1>
+          <p class="subtitle">Multi-User Web &bull; Installable di HP &bull; Anti-Blokir</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="waStatusBadge" class="status-badge disconnected">
+          <span class="badge-dot"></span>
+          <span id="waStatusText">Memeriksa Koneksi...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN GRID LAYOUT -->
+    <main class="main-grid">
+      
+      <!-- KOLOM KIRI: KONEKSI & PENGATURAN KEAMANAN -->
+      <aside class="sidebar">
+        
+        <!-- CARD 1: KONEKSI WHATSAPP -->
+        <section class="card">
+          <div class="card-header">
+            <h2>1. Koneksi WhatsApp Anda</h2>
+          </div>
+          <div class="card-body">
+            <!-- QR View -->
+            <div id="qrContainer" class="qr-box">
+              <div id="qrLoading" class="loader-box">
+                <div class="spinner"></div>
+                <p>Memuat QR Code...</p>
+              </div>
+              <img id="qrImage" src="" alt="WhatsApp QR Code" style="display: none;">
+              <p class="qr-instruction">Buka WhatsApp di HP &rarr; Perangkat Tertaut &rarr; Tautkan Perangkat</p>
+            </div>
+
+            <!-- Connected View -->
+            <div id="connectedContainer" class="connected-box" style="display: none;">
+              <div class="connected-icon">✅</div>
+              <div class="connected-info">
+                <strong id="connectedUserName">Akun WhatsApp</strong>
+                <span id="connectedUserPhone" class="phone-tag">08...</span>
+                <span class="status-online">Siap Mengirim</span>
+              </div>
+              <button id="btnLogout" class="btn btn-secondary btn-sm">Ganti / Keluar Akun</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CARD 2: PENGATURAN AMAN (ANTI-BLOKIR) -->
+        <section class="card">
+          <div class="card-header">
+            <h2>2. Proteksi Anti-Blokir</h2>
+            <span class="chip-safe">Keamanan Jangka Panjang</span>
+          </div>
+          <div class="card-body">
+            
+            <div class="form-group">
+              <label>Jeda Acak Antar Pesan (Detik)</label>
+              <div class="input-range-pair">
+                <div>
+                  <small>Min:</small>
+                  <input type="number" id="minDelay" class="form-control" value="10" min="3" max="120">
+                </div>
+                <div>
+                  <small>Max:</small>
+                  <input type="number" id="maxDelay" class="form-control" value="25" min="5" max="180">
+                </div>
+              </div>
+              <small class="help-text">Jeda acak mencegah WhatsApp mendeteksi ritme bot yang kaku.</small>
+            </div>
+
+            <div class="form-group">
+              <label>Istirahat Berkala (Batch Cooldown)</label>
+              <div class="input-range-pair">
+                <div>
+                  <small>Tiap kirim:</small>
+                  <input type="number" id="batchSize" class="form-control" value="20" min="5" max="100">
+                </div>
+                <div>
+                  <small>Istirahat (menit):</small>
+                  <input type="number" id="batchPauseMinutes" class="form-control" value="3" min="1" max="60">
+                </div>
+              </div>
+              <small class="help-text">Meniru jeda istirahat manusia agar akun tidak dianggap spammer.</small>
+            </div>
+
+            <div class="form-check">
+              <input type="checkbox" id="simulateTyping" checked>
+              <label for="simulateTyping">Simulasi status "Sedang Mengetik..."</label>
+            </div>
+
+            <div class="form-check">
+              <input type="checkbox" id="verifyNumber" checked>
+              <label for="verifyNumber">Validasi nomor ada di WA sebelum kirim</label>
+            </div>
+
+            <hr class="divider">
+
+            <div class="form-group">
+              <label>Waktu Pengiriman</label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="scheduleType" value="now" checked> Kirim Sekarang
+                </label>
+                <label>
+                  <input type="radio" name="scheduleType" value="scheduled"> Jadwalkan Waktu
+                </label>
+              </div>
+              <div id="scheduleTimeWrapper" class="schedule-input-box" style="display: none;">
+                <label for="scheduledAt"><small>Pilih Tanggal & Jam:</small></label>
+                <input type="datetime-local" id="scheduledAt" class="form-control">
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- TIPS KEAMANAN RINGKAS -->
+        <section class="card tip-card">
+          <div class="card-header">
+            <h3>💡 Tips Aman Jangka Panjang</h3>
+          </div>
+          <div class="card-body">
+            <ul class="tip-list">
+              <li>Gunakan nomor WA yang sudah aktif &gt; 1 bulan.</li>
+              <li>Gunakan fitur <b>Spintax</b> agar tiap pesan unik.</li>
+              <li>Nomor baru: batasi 30–50 pesan/hari di awal.</li>
+              <li>Pesan yang relevan mencegah tombol <i>Laporkan / Blokir</i> dari penerima.</li>
+            </ul>
+          </div>
+        </section>
+
+      </aside>
+
+
+      <!-- KOLOM TENGAH & KANAN: KONTEN BLAST & MONITORING -->
+      <section class="content-area">
+
+        <!-- CARD 3: TARGET KONTAK -->
+        <div class="card">
+          <div class="card-header">
+            <h2>3. Target Kontak (Khusus Format Indonesia 08...)</h2>
+            <div id="contactStatsPill" class="stats-counter" style="display: none;">
+              <span id="countValid" class="badge-success">0 Siap</span>
+              <span id="countDupes" class="badge-warning">0 Duplikat Dihapus</span>
+              <span id="countInvalid" class="badge-danger">0 Tidak Valid</span>
+            </div>
+          </div>
+          <div class="card-body">
+            
+            <!-- TAB IMPORT KONTAK -->
+            <div class="tab-buttons">
+              <button class="tab-btn active" data-tab="excel">📁 Import File Excel / CSV</button>
+              <button class="tab-btn" data-tab="manual">✍️ Input Manual</button>
+            </div>
+
+            <!-- TAB 1: EXCEL -->
+            <div id="tabExcel" class="tab-content active">
+              <div class="upload-dropzone" id="excelDropzone">
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;">
+                <div class="dropzone-content">
+                  <div class="dropzone-icon">📊</div>
+                  <p><strong>Klik atau Tarik File Excel / CSV ke sini</strong></p>
+                  <small>Mendukung format kolom: Nomor, No HP, Telepon, WhatsApp, Nama, dll.</small>
+                  <div id="excelLoading" class="loader-box" style="display: none;">
+                    <div class="spinner"></div>
+                    <span>Menganalisis file Excel...</span>
+                  </div>
+                </div>
+              </div>
+              <div id="excelFileInfo" class="file-loaded-info" style="display: none;">
+                <span class="file-name" id="excelFileName">data.xlsx</span>
+                <button id="btnClearExcel" class="btn-text">Ganti File</button>
+              </div>
+            </div>
+
+            <!-- TAB 2: MANUAL -->
+            <div id="tabManual" class="tab-content">
+              <div class="form-group">
+                <label>Masukkan nomor HP (Satu nomor per baris, atau format: <code>08123456789, Nama</code>):</label>
+                <textarea id="manualContactsInput" class="form-control" rows="4" placeholder="08123456789, Budi&#10;085712345678, Ani&#10;089612345678"></textarea>
+                <div class="manual-actions">
+                  <button id="btnProcessManual" class="btn btn-secondary btn-sm">Validasi & Terapkan Nomor</button>
+                  <small class="help-text">Otomatis mengubah 08... menjadi 628... dan menghapus duplikasi.</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- PREVIEW TABEL KONTAK -->
+            <div id="contactsPreviewWrapper" class="preview-box" style="display: none;">
+              <div class="preview-header">
+                <strong>Pratinjau Kontak (<span id="previewCount">0</span> penerima):</strong>
+                <button id="btnTogglePreview" class="btn-text">Tutup Tabel</button>
+              </div>
+              <div class="table-responsive" id="contactsTableContainer">
+                <table class="data-table" id="contactsTable">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Nomor (Otomatis 628)</th>
+                      <th>Nama</th>
+                      <th>Kolom Tambahan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contactsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- CARD 4: KOMPOSER PESAN & MEDIA -->
+        <div class="card">
+          <div class="card-header">
+            <h2>4. Komposer Pesan & Media</h2>
+          </div>
+          <div class="card-body">
+            
+            <!-- Variable Chips -->
+            <div class="chips-container">
+              <span class="chip-label">Klik untuk masukkan tag:</span>
+              <button type="button" class="tag-chip" data-tag="{nama}">{nama}</button>
+              <button type="button" class="tag-chip" data-tag="{nomor}">{nomor}</button>
+              <button type="button" class="tag-chip" data-tag="{panggilan}">{panggilan}</button>
+              <button type="button" class="tag-chip" data-tag="{tanggal}">{tanggal}</button>
+              <button type="button" class="tag-chip" data-tag="{waktu}">{waktu}</button>
+              <span id="customFieldChips"></span>
+            </div>
+
+            <!-- Message Textarea -->
+            <div class="form-group">
+              <label for="messageTemplate">Isi Pesan / Caption Media:</label>
+              <textarea id="messageTemplate" class="form-control" rows="5" placeholder="Halo {panggilan} {nama}, kami ingin menginfokan penawaran spesial...&#10;&#10;Contoh Spintax: {Halo|Hai|Selamat {panggilan}} {nama}!"></textarea>
+              <div class="spintax-helper">
+                <small>💡 <b>Fitur Spintax:</b> Gunakan kurung kurawal <code>{Opsi 1|Opsi 2|Opsi 3}</code> untuk variasi kata otomatis agar pesan tidak terdeteksi kembar oleh WhatsApp.</small>
+              </div>
+            </div>
+
+            <!-- Media Upload (Foto / Video) -->
+            <div class="form-group">
+              <label>Lampiran Media (Opsional: Foto JPG/PNG atau Video MP4):</label>
+              <div class="media-upload-row">
+                <label for="mediaFileInput" class="btn btn-secondary btn-sm">
+                  📁 Pilih Foto / Video
+                </label>
+                <input type="file" id="mediaFileInput" accept="image/*,video/*" style="display: none;">
+                <span id="mediaFileName" class="media-filename-label">Belum ada file media dipilih</span>
+                <button type="button" id="btnRemoveMedia" class="btn-text danger" style="display: none;">Hapus Media</button>
+              </div>
+
+              <!-- Media Preview Box -->
+              <div id="mediaPreviewWrapper" class="media-preview-box" style="display: none;">
+                <img id="mediaPreviewImage" src="" alt="Preview Foto" style="display: none;">
+                <video id="mediaPreviewVideo" controls style="display: none;"></video>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- CARD 5: KONTROL AKSI & LIVE MONITORING -->
+        <div class="card highlight-card">
+          <div class="card-header">
+            <h2>5. Eksekusi & Monitoring Real-Time</h2>
+          </div>
+          <div class="card-body">
+            
+            <!-- ACTION BUTTONS -->
+            <div class="action-buttons-row">
+              <button id="btnStartBlast" class="btn btn-primary btn-lg">
+                🚀 Mulai Kirim Blast
+              </button>
+              <button id="btnPauseBlast" class="btn btn-warning" style="display: none;">
+                ⏸️ Jeda
+              </button>
+              <button id="btnResumeBlast" class="btn btn-success" style="display: none;">
+                ▶️ Lanjutkan
+              </button>
+              <button id="btnStopBlast" class="btn btn-danger" style="display: none;">
+                ⏹️ Hentikan
+              </button>
+              <button id="btnExportReport" class="btn btn-secondary" style="display: none;">
+                📥 Unduh Laporan Excel
+              </button>
+            </div>
+
+            <!-- LIVE STATUS & PROGRESS -->
+            <div id="progressSection" class="progress-section" style="display: none;">
+              
+              <!-- Countdown / Jitter Alert -->
+              <div id="countdownAlert" class="alert-box alert-info" style="display: none;">
+                <span id="countdownIcon">⏳</span>
+                <span id="countdownMessage">Menunggu jeda...</span>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="progress-info-row">
+                <span>Progress Pengiriman:</span>
+                <strong id="progressPercent">0%</strong>
+              </div>
+              <div class="progress-bar-track">
+                <div id="progressBarFill" class="progress-bar-fill" style="width: 0%;"></div>
+              </div>
+
+              <!-- Counters -->
+              <div class="stats-summary-grid">
+                <div class="stat-box">
+                  <span class="stat-label">Total Target</span>
+                  <span id="statTotal" class="stat-num">0</span>
+                </div>
+                <div class="stat-box success">
+                  <span class="stat-label">Terkirim</span>
+                  <span id="statSent" class="stat-num">0</span>
+                </div>
+                <div class="stat-box danger">
+                  <span class="stat-label">Gagal</span>
+                  <span id="statFailed" class="stat-num">0</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-label">Sisa</span>
+                  <span id="statRemaining" class="stat-num">0</span>
+                </div>
+              </div>
+
+              <!-- LIVE ACTIVITY TABLE -->
+              <div class="live-log-container">
+                <h3>Log Aktivitas Terakhir:</h3>
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Waktu</th>
+                        <th>Nomor</th>
+                        <th>Nama</th>
+                        <th>Status</th>
+                        <th>Keterangan</th>
+                      </tr>
+                    </thead>
+                    <tbody id="liveLogTableBody">
+                      <tr>
+                        <td colspan="5" class="text-center text-muted">Belum ada pengiriman berjalan</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <p>WhatsApp Blast Indonesia &bull; PWA Multi-User Web Edition &bull; Digunakan secara bijak sesuai ketentuan WhatsApp.</p>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

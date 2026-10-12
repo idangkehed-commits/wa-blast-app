@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: whatsapp-blast-id
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: PORT
+        value: 3000
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: wa-blast-storage
+      mountPath: /var/data
+      sizeGB: 1
