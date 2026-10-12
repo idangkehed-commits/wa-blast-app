@@ -63,14 +63,54 @@
             <h2>1. Koneksi WhatsApp Anda</h2>
           </div>
           <div class="card-body">
-            <!-- QR View -->
-            <div id="qrContainer" class="qr-box">
-              <div id="qrLoading" class="loader-box">
-                <div class="spinner"></div>
-                <p>Memuat QR Code...</p>
+            
+            <!-- Connection Tabs: Pairing Code vs QR Code -->
+            <div id="connectionMethodTabs" class="tab-buttons" style="margin-bottom: 12px;">
+              <button type="button" class="tab-btn active" data-wa-tab="pairing">🔢 Kode Nomor (Paling Mudah di HP)</button>
+              <button type="button" class="tab-btn" data-wa-tab="qr">📷 Scan QR</button>
+            </div>
+
+            <!-- TAB 1: KODE PAIRING (NO CAMERA NEEDED) -->
+            <div id="tabWaPairing" class="wa-tab-content">
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label for="pairingPhoneInput">Masukkan Nomor WhatsApp Anda:</label>
+                <div class="input-action-row">
+                  <input type="tel" id="pairingPhoneInput" class="form-control" placeholder="Contoh: 08123456789">
+                  <button type="button" id="btnGetPairingCode" class="btn btn-primary" style="white-space: nowrap;">Dapatkan Kode</button>
+                </div>
+                <small class="help-text">Tanpa kamera! Cocok untuk yang membuka web ini langsung di HP.</small>
               </div>
-              <img id="qrImage" src="" alt="WhatsApp QR Code" style="display: none;">
-              <p class="qr-instruction">Buka WhatsApp di HP &rarr; Perangkat Tertaut &rarr; Tautkan Perangkat</p>
+
+              <!-- TAMPILAN KODE PAIRING -->
+              <div id="pairingCodeDisplay" class="pairing-code-box" style="display: none;">
+                <div class="pairing-code-header">
+                  <span>Kode Tautan WhatsApp Anda:</span>
+                  <button type="button" id="btnCopyPairingCode" class="btn-text">📋 Salin</button>
+                </div>
+                <div class="code-digits" id="pairingCodeText">---- - ----</div>
+                
+                <div class="pairing-steps">
+                  <strong>Cara Tautkan di WhatsApp HP Anda:</strong>
+                  <ol>
+                    <li>Buka aplikasi WhatsApp di HP.</li>
+                    <li>Buka <b>Perangkat Tertaut</b> &rarr; <b>Tautkan Perangkat</b>.</li>
+                    <li>Klik tulisan <b>"Tautkan dengan nomor telepon saja"</b> di bawah layar kamera scanner.</li>
+                    <li>Masukkan kode di atas.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: QR VIEW -->
+            <div id="tabWaQr" class="wa-tab-content" style="display: none;">
+              <div id="qrContainer" class="qr-box">
+                <div id="qrLoading" class="loader-box">
+                  <div class="spinner"></div>
+                  <p>Memuat QR Code...</p>
+                </div>
+                <img id="qrImage" src="" alt="WhatsApp QR Code" style="display: none;">
+                <p class="qr-instruction">Buka WhatsApp di HP &rarr; Perangkat Tertaut &rarr; Tautkan Perangkat</p>
+              </div>
             </div>
 
             <!-- Connected View -->

@@ -34,6 +34,16 @@ const connectedUserName = document.getElementById('connectedUserName');
 const connectedUserPhone = document.getElementById('connectedUserPhone');
 const btnLogout = document.getElementById('btnLogout');
 
+// WA Pairing Code Elements
+const connectionMethodTabs = document.getElementById('connectionMethodTabs');
+const tabWaPairing = document.getElementById('tabWaPairing');
+const tabWaQr = document.getElementById('tabWaQr');
+const pairingPhoneInput = document.getElementById('pairingPhoneInput');
+const btnGetPairingCode = document.getElementById('btnGetPairingCode');
+const pairingCodeDisplay = document.getElementById('pairingCodeDisplay');
+const pairingCodeText = document.getElementById('pairingCodeText');
+const btnCopyPairingCode = document.getElementById('btnCopyPairingCode');
+
 // PWA Elements
 const pwaInstallBanner = document.getElementById('pwaInstallBanner');
 const btnPwaInstall = document.getElementById('btnPwaInstall');
@@ -154,6 +164,73 @@ function initEventSource() {
   };
 }
 
+// Tab Switcher Koneksi WA (Pairing Code vs QR)
+document.querySelectorAll('[data-wa-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-wa-tab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (btn.dataset.waTab === 'pairing') {
+      tabWaPairing.style.display = 'block';
+      tabWaQr.style.display = 'none';
+    } else {
+      tabWaPairing.style.display = 'none';
+      tabWaQr.style.display = 'block';
+    }
+  });
+});
+
+// Request Kode Pairing
+btnGetPairingCode.addEventListener('click', async () => {
+  const phone = pairingPhoneInput.value.trim();
+  if (!phone) {
+    alert('Silakan masukkan nomor WhatsApp Anda terlebih dahulu (contoh: 08123456789)!');
+    return;
+  }
+
+  try {
+    btnGetPairingCode.disabled = true;
+    btnGetPairingCode.textContent = 'Meminta Kode...';
+
+    const res = await apiFetch('/api/pairing-code', {
+      method: 'POST',
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message || 'Gagal meminta kode pairing');
+      return;
+    }
+
+    displayPairingCode(data.code);
+  } catch (err) {
+    alert('Terjadi kesalahan: ' + err.message);
+  } finally {
+    btnGetPairingCode.disabled = false;
+    btnGetPairingCode.textContent = 'Dapatkan Kode';
+  }
+});
+
+function displayPairingCode(rawCode) {
+  if (!rawCode) return;
+  let formatted = rawCode;
+  if (rawCode.length === 8) {
+    formatted = `${rawCode.substring(0, 4)} - ${rawCode.substring(4)}`;
+  }
+  pairingCodeText.textContent = formatted;
+  pairingCodeDisplay.style.display = 'block';
+}
+
+btnCopyPairingCode.addEventListener('click', () => {
+  const code = pairingCodeText.textContent.replace(/[^a-zA-Z0-9]/g, '');
+  navigator.clipboard.writeText(code).then(() => {
+    btnCopyPairingCode.textContent = '✅ Tersalin!';
+    setTimeout(() => { btnCopyPairingCode.textContent = '📋 Salin'; }, 2000);
+  }).catch(() => {
+    alert('Kode Anda: ' + code);
+  });
+});
+
 // Update UI Koneksi WhatsApp
 function updateWaUI(waData) {
   if (!waData) return;
@@ -162,7 +239,9 @@ function updateWaUI(waData) {
   if (waData.status === 'connected') {
     waStatusBadge.className = 'status-badge connected';
     waStatusText.textContent = 'Terhubung';
-    qrContainer.style.display = 'none';
+    connectionMethodTabs.style.display = 'none';
+    tabWaPairing.style.display = 'none';
+    tabWaQr.style.display = 'none';
     connectedContainer.style.display = 'block';
 
     if (waData.user) {
@@ -171,9 +250,23 @@ function updateWaUI(waData) {
     }
   } else if (waData.status === 'connecting') {
     waStatusBadge.className = 'status-badge connecting';
-    waStatusText.textContent = 'Menunggu Scan QR';
+    waStatusText.textContent = 'Siap Dihubungkan';
     connectedContainer.style.display = 'none';
-    qrContainer.style.display = 'flex';
+    connectionMethodTabs.style.display = 'flex';
+
+    // Periksa tab mana yang aktif
+    const activeTab = document.querySelector('[data-wa-tab].active')?.dataset.waTab || 'pairing';
+    if (activeTab === 'pairing') {
+      tabWaPairing.style.display = 'block';
+      tabWaQr.style.display = 'none';
+    } else {
+      tabWaPairing.style.display = 'none';
+      tabWaQr.style.display = 'block';
+    }
+
+    if (waData.pairingCode) {
+      displayPairingCode(waData.pairingCode);
+    }
 
     if (waData.qr) {
       qrLoading.style.display = 'none';
@@ -187,9 +280,7 @@ function updateWaUI(waData) {
     waStatusBadge.className = 'status-badge disconnected';
     waStatusText.textContent = 'Terputus';
     connectedContainer.style.display = 'none';
-    qrContainer.style.display = 'flex';
-    qrLoading.style.display = 'flex';
-    qrImage.style.display = 'none';
+    connectionMethodTabs.style.display = 'flex';
   }
 }
 

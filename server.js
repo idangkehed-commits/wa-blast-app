@@ -178,6 +178,17 @@ app.post('/api/reconnect', async (req, res) => {
   }
 });
 
+// 4b. Minta Kode Pairing (Tautan dengan nomor telepon)
+app.post('/api/pairing-code', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    const code = await req.userSession.waService.getPairingCode(phone);
+    res.json({ success: true, code });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 // 5. Upload & Parsing Excel / CSV
 app.post('/api/parse-excel', upload.single('file'), (req, res) => {
   if (!req.file) {

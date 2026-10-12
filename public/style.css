@@ -202,6 +202,66 @@ body {
   font-weight: 600;
 }
 
+/* PAIRING CODE & WA CONNECTION */
+.input-action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.pairing-code-box {
+  background: var(--primary-light);
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.pairing-code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--primary-hover);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.code-digits {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--text-main);
+  background: #ffffff;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px dashed #10b981;
+  margin: 6px 0 10px;
+  font-family: monospace;
+  user-select: all;
+}
+
+.pairing-steps {
+  text-align: left;
+  background: #ffffff;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.pairing-steps strong {
+  color: var(--text-main);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pairing-steps ol {
+  padding-left: 16px;
+  line-height: 1.6;
+}
+
 /* QR & WA CONNECTION */
 .qr-box {
   display: flex;

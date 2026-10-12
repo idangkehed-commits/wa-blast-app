@@ -16,6 +16,7 @@ class WhatsAppService {
     this.authDir = authDir || path.join(__dirname, '../auth_info_baileys');
     this.sock = null;
     this.qrDataUrl = null;
+    this.pairingCode = null;
     this.connectionStatus = 'disconnected'; // 'disconnected' | 'connecting' | 'connected'
     this.connectedUser = null;
     this.eventListeners = [];
@@ -31,6 +32,7 @@ class WhatsAppService {
     const payload = {
       status: this.connectionStatus,
       qr: this.qrDataUrl,
+      pairingCode: this.pairingCode,
       user: this.connectedUser
     };
     for (const listener of this.eventListeners) {
@@ -206,6 +208,37 @@ class WhatsAppService {
     }
   }
 
+  // Permintaan kode pairing untuk koneksi via nomor telepon (tanpa scan QR)
+  async getPairingCode(rawPhoneNumber) {
+    if (!rawPhoneNumber) throw new Error('Nomor HP tidak boleh kosong');
+    let clean = String(rawPhoneNumber).replace(/[^0-9]/g, '');
+    if (clean.startsWith('08')) clean = '62' + clean.substring(1);
+    else if (clean.startsWith('8')) clean = '62' + clean;
+
+    if (!clean.startsWith('628') || clean.length < 10) {
+      throw new Error('Nomor HP tidak valid. Masukkan format seluler Indonesia seperti 08123456789');
+    }
+
+    if (!this.sock) {
+      await this.init();
+      await new Promise(r => setTimeout(r, 1500));
+    }
+
+    if (this.sock?.authState?.creds?.registered) {
+      throw new Error('WhatsApp akun ini sudah terhubung!');
+    }
+
+    try {
+      const code = await this.sock.requestPairingCode(clean);
+      this.pairingCode = code;
+      this.notifyStatus();
+      return code;
+    } catch (err) {
+      console.error('Error saat request pairing code:', err);
+      throw new Error('Gagal meminta kode pairing: ' + err.message);
+    }
+  }
+
   // Logout dan hapus sesi
   async logout() {
     try {
@@ -218,6 +251,7 @@ class WhatsAppService {
     this.clearAuth();
     this.connectionStatus = 'disconnected';
     this.qrDataUrl = null;
+    this.pairingCode = null;
     this.connectedUser = null;
     this.notifyStatus();
     // Restart init untuk menampilkan QR baru
@@ -238,6 +272,7 @@ class WhatsAppService {
     return {
       status: this.connectionStatus,
       qr: this.qrDataUrl,
+      pairingCode: this.pairingCode,
       user: this.connectedUser
     };
   }
