@@ -1,5 +1,7 @@
 # 🚀 WhatsApp Blast Indonesia (Aman & Anti-Blokir)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/idangkehed-commits/wa-blast-app)
+
 Aplikasi WhatsApp Blast mandiri, ringan, dan aman yang dirancang khusus untuk nomor telepon seluler di Indonesia (`08...` / `628...`).
 
 ---
