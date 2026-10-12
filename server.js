@@ -10,14 +10,41 @@ const { parseExcelFile, parseManualContacts } = require('./services/contactServi
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Error handlers agar log Render jelas jika ada error
+process.on('uncaughtException', (err) => {
+  console.error('[Fatal Error] uncaughtException:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Fatal Error] unhandledRejection:', reason);
+});
+
 // Setup direktori upload & sessions (Mendukung Persistent Disk Render.com via DATA_DIR)
-const BASE_DATA_DIR = process.env.DATA_DIR || __dirname;
+let BASE_DATA_DIR = __dirname;
+if (process.env.DATA_DIR) {
+  try {
+    if (!fs.existsSync(process.env.DATA_DIR)) {
+      fs.mkdirSync(process.env.DATA_DIR, { recursive: true });
+    }
+    fs.accessSync(process.env.DATA_DIR, fs.constants.W_OK);
+    BASE_DATA_DIR = process.env.DATA_DIR;
+  } catch (err) {
+    console.warn(`[Warning] DATA_DIR (${process.env.DATA_DIR}) tidak dapat ditulis, fallback ke folder lokal:`, err.message);
+    BASE_DATA_DIR = __dirname;
+  }
+}
+
 const UPLOAD_DIR = path.join(BASE_DATA_DIR, 'uploads');
 const SESSIONS_DIR = path.join(BASE_DATA_DIR, 'sessions');
 
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch (e) { console.warn('Warning create UPLOAD_DIR:', e.message); }
 
+try {
+  if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+} catch (e) { console.warn('Warning create SESSIONS_DIR:', e.message); }
+
+console.log(`[Storage] Base Directory: ${BASE_DATA_DIR}`);
 console.log(`[Storage] Folder Sessions: ${SESSIONS_DIR}`);
 console.log(`[Storage] Folder Uploads: ${UPLOAD_DIR}`);
 
@@ -66,6 +93,9 @@ app.use('/api', (req, res, next) => {
   req.userSession = sessionManager.getOrCreateSession(req.sessionId);
   next();
 });
+
+// Health check endpoint untuk Render
+app.get('/health', (req, res) => res.status(200).send('OK'));
 
 // ==========================================
 // ROUTES & API
