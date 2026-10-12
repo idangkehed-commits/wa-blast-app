@@ -10,6 +10,11 @@ const { parseExcelFile, parseManualContacts } = require('./services/contactServi
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+console.log('=== WhatsApp Blast Server Starting ===');
+console.log('[System] Node Version:', process.version);
+console.log('[System] Environment PORT:', process.env.PORT);
+console.log('[System] Active PORT:', PORT);
+
 // Error handlers agar log Render jelas jika ada error
 process.on('uncaughtException', (err) => {
   console.error('[Fatal Error] uncaughtException:', err);
