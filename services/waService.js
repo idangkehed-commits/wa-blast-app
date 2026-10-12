@@ -1,8 +1,15 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+
+let baileysModule = null;
+async function getBaileys() {
+  if (!baileysModule) {
+    baileysModule = await import('@whiskeysockets/baileys');
+  }
+  return baileysModule;
+}
 
 class WhatsAppService {
   constructor(authDir) {
@@ -37,6 +44,10 @@ class WhatsAppService {
 
   async init() {
     try {
+      const baileys = await getBaileys();
+      const makeWASocket = baileys.default || baileys.makeWASocket;
+      const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = baileys;
+
       if (!fs.existsSync(this.authDir)) {
         fs.mkdirSync(this.authDir, { recursive: true });
       }
